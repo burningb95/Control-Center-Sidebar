@@ -15,6 +15,8 @@ ColumnLayout {
     property color textSecondary: "#aa9cac"
 
     property string statusText: "ONLINE"
+    property string titleText: "Network"
+    property string subtitleText: "Connection status"
 
     Text {
         text: "NETWORK"
@@ -47,14 +49,14 @@ ColumnLayout {
                 Layout.fillWidth: true
 
                 Text {
-                    text: "Network"
+                    text: root.titleText
                     color: root.textPrimary
                     font.pixelSize: 11
                     font.bold: true
                 }
 
                 Text {
-                    text: "Connection status"
+                    text: root.subtitleText
                     color: root.textSecondary
                     font.pixelSize: 9
                 }

@@ -15,6 +15,9 @@ PlasmoidItem {
     Plasmoid.title: "Garuda Neon Sidebar"
 
     readonly property QtObject sysMonitor: Code.SystemMonitor {}
+    readonly property QtObject mediaController: Code.MediaController {}
+    readonly property QtObject networkManager: Code.NetworkManager {}
+    readonly property QtObject audioManager: Code.AudioManager {}
 
     property color neonRed: "#ff1744"
     property color neonPink: "#ff2bd6"
@@ -79,6 +82,15 @@ PlasmoidItem {
             neonPurple: root.neonPurple
             textPrimary: root.textPrimary
             textSecondary: root.textSecondary
+
+            trackTitle: root.mediaController.playing && root.mediaController.trackTitle.length > 0
+                        ? root.mediaController.trackTitle
+                        : "Nothing playing"
+            trackSubtitle: root.mediaController.playing
+                           ? (root.mediaController.trackArtist.length > 0
+                              ? root.mediaController.trackArtist
+                              : "Unknown artist")
+                           : "No active media player"
         }
 
         NetworkCard {
@@ -88,6 +100,11 @@ PlasmoidItem {
             neonRed: root.neonRed
             textPrimary: root.textPrimary
             textSecondary: root.textSecondary
+
+            statusText: root.networkManager.online ? "ONLINE" : "OFFLINE"
+            subtitleText: root.networkManager.connectionName.length > 0
+                          ? root.networkManager.connectionName
+                          : "No connection"
         }
 
         QuickActions {
@@ -103,6 +120,9 @@ PlasmoidItem {
             iconColor: root.neonPink
             labelColor: root.textSecondary
             textSecondary: root.textSecondary
+
+            networkManager: root.networkManager
+            audioManager: root.audioManager
         }
 
         Item {
