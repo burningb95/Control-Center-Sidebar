@@ -1,6 +1,10 @@
 import QtQuick
 import QtQuick.Layouts
 
+import org.kde.plasma.plasma5support as P5Support
+
+import "../code" as Code
+
 ColumnLayout {
     id: root
 
@@ -23,6 +27,36 @@ ColumnLayout {
     ]
 
     signal actionTriggered(string label)
+
+    readonly property QtObject networkManager: Code.NetworkManager {}
+    readonly property QtObject audioManager: Code.AudioManager {}
+
+    property P5Support.DataSource _launcher: P5Support.DataSource {
+        engine: "executable"
+        connectedSources: []
+        onNewData: (sourceName, data) => disconnectSource(sourceName)
+    }
+
+    function _launch(command) {
+        _launcher.connectSource(command)
+    }
+
+    function handleAction(label) {
+        switch (label) {
+        case "DISPLAY":
+            root._launch("systemsettings kcm_kscreen")
+            break
+        case "WIFI":
+            root.networkManager.toggleWifi()
+            break
+        case "AUDIO":
+            root.audioManager.toggleMute()
+            break
+        case "POWER":
+            root._launch("plasma-shutdown")
+            break
+        }
+    }
 
     Text {
         text: "QUICK ACTIONS"
@@ -51,7 +85,10 @@ ColumnLayout {
                 iconColor: root.iconColor
                 labelColor: root.labelColor
 
-                onClicked: root.actionTriggered(modelData.label)
+                onClicked: {
+                    root.actionTriggered(modelData.label)
+                    root.handleAction(modelData.label)
+                }
             }
         }
     }
