@@ -31,18 +31,6 @@ Window {
     readonly property QtObject networkManager: Code.NetworkManager {}
     readonly property QtObject audioManager: Code.AudioManager {}
 
-    property color neonRed: "#ff1744"
-    property color neonPink: "#ff2bd6"
-    property color neonPurple: "#9c27ff"
-
-    property color background: "#0b080d"
-    property color panel: "#120d16"
-    property color card: "#1b1220"
-    property color cardHover: "#24162b"
-    property color textPrimary: "#f4edf5"
-    property color textSecondary: "#aa9cac"
-    property color borderColor: "#39233f"
-
     onPinnedChanged: {
         if (root.pinned) {
             closeTimer.stop()
@@ -122,7 +110,7 @@ Window {
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             anchors.right: parent.right
-            color: root.neonPink
+            color: Code.Theme.neonPink
             opacity: 0.85
         }
 
@@ -133,9 +121,9 @@ Window {
             anchors.bottom: parent.bottom
             anchors.right: handle.left
             radius: 22
-            color: root.background
+            color: Code.Theme.background
             border.width: 1
-            border.color: Qt.rgba(root.neonPink.r, root.neonPink.g, root.neonPink.b, 0.35)
+            border.color: Qt.rgba(Code.Theme.neonPink.r, Code.Theme.neonPink.g, Code.Theme.neonPink.b, 0.35)
 
             ColumnLayout {
                 anchors.fill: parent
@@ -144,8 +132,8 @@ Window {
 
                 Header {
                     Layout.fillWidth: true
-                    primaryColor: root.textPrimary
-                    accentColor: root.neonPink
+                    primaryColor: Code.Theme.textPrimary
+                    accentColor: Code.Theme.neonPink
                     pinned: root.pinned
                     onPinToggled: root.pinned = !root.pinned
                 }
@@ -153,25 +141,25 @@ Window {
                 Rectangle {
                     Layout.fillWidth: true
                     height: 1
-                    color: Qt.rgba(root.neonPink.r, root.neonPink.g, root.neonPink.b, 0.22)
+                    color: Qt.rgba(Code.Theme.neonPink.r, Code.Theme.neonPink.g, Code.Theme.neonPink.b, 0.22)
                 }
 
                 SystemCard {
                     sysMonitor: root.sysMonitor
-                    panelColor: root.panel
-                    borderColor: root.borderColor
-                    accentColor: root.neonRed
-                    textPrimary: root.textPrimary
-                    textSecondary: root.textSecondary
+                    panelColor: Code.Theme.panel
+                    borderColor: Code.Theme.borderColor
+                    accentColor: Code.Theme.neonRed
+                    textPrimary: Code.Theme.textPrimary
+                    textSecondary: Code.Theme.textSecondary
                 }
 
                 MediaCard {
-                    panelColor: root.panel
-                    borderColor: root.borderColor
-                    neonRed: root.neonRed
-                    neonPurple: root.neonPurple
-                    textPrimary: root.textPrimary
-                    textSecondary: root.textSecondary
+                    panelColor: Code.Theme.panel
+                    borderColor: Code.Theme.borderColor
+                    neonRed: Code.Theme.neonRed
+                    neonPurple: Code.Theme.neonPurple
+                    textPrimary: Code.Theme.textPrimary
+                    textSecondary: Code.Theme.textSecondary
 
                     trackTitle: root.mediaController.playing && root.mediaController.trackTitle.length > 0
                                 ? root.mediaController.trackTitle
@@ -184,12 +172,12 @@ Window {
                 }
 
                 NetworkCard {
-                    panelColor: root.panel
-                    borderColor: root.borderColor
-                    neonPink: root.neonPink
-                    neonRed: root.neonRed
-                    textPrimary: root.textPrimary
-                    textSecondary: root.textSecondary
+                    panelColor: Code.Theme.panel
+                    borderColor: Code.Theme.borderColor
+                    neonPink: Code.Theme.neonPink
+                    neonRed: Code.Theme.neonRed
+                    textPrimary: Code.Theme.textPrimary
+                    textSecondary: Code.Theme.textSecondary
 
                     statusText: root.networkManager.online ? "ONLINE" : "OFFLINE"
                     subtitleText: root.networkManager.connectionName.length > 0
@@ -198,13 +186,13 @@ Window {
                 }
 
                 QuickActions {
-                    panelColor: root.card
-                    hoverColor: root.cardHover
-                    borderColor: root.borderColor
-                    hoverBorderColor: Qt.rgba(root.neonPink.r, root.neonPink.g, root.neonPink.b, 0.45)
-                    iconColor: root.neonPink
-                    labelColor: root.textSecondary
-                    textSecondary: root.textSecondary
+                    panelColor: Code.Theme.card
+                    hoverColor: Code.Theme.cardHover
+                    borderColor: Code.Theme.borderColor
+                    hoverBorderColor: Qt.rgba(Code.Theme.neonPink.r, Code.Theme.neonPink.g, Code.Theme.neonPink.b, 0.45)
+                    iconColor: Code.Theme.neonPink
+                    labelColor: Code.Theme.textSecondary
+                    textSecondary: Code.Theme.textSecondary
 
                     networkManager: root.networkManager
                     audioManager: root.audioManager
@@ -219,7 +207,7 @@ Window {
 
                     Text {
                         text: "GARUDA"
-                        color: root.neonRed
+                        color: Code.Theme.neonRed
                         font.pixelSize: 9
                         font.bold: true
                         font.letterSpacing: 2
@@ -231,7 +219,7 @@ Window {
 
                     Text {
                         text: "NEON SIDEBAR"
-                        color: root.textSecondary
+                        color: Code.Theme.textSecondary
                         font.pixelSize: 8
                         font.letterSpacing: 1
                     }
