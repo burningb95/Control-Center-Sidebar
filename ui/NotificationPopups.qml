@@ -16,6 +16,9 @@ Window {
     property int cardWidth: 300
     property int margin: 12
 
+    // Used when a notification doesn't request its own timeout.
+    property int defaultTimeoutMs: 5000
+
     width: cardWidth + margin * 2
     height: Math.max(1, column.implicitHeight + margin * 2)
     color: "transparent"
@@ -44,16 +47,23 @@ Window {
         return -1
     }
 
+    // Snapshot the row's data: the toast outlives its position in the model,
+    // which shifts as other notifications come and go.
     function addToast(row) {
+        var roles = NotificationManager.Notifications
         var idx = popupRoot.notificationsModel.index(row, 0)
-        var timeout = popupRoot.notificationsModel.data(idx, NotificationManager.Notifications.TimeoutRole)
+        var read = function(role) {
+            return popupRoot.notificationsModel.data(idx, role)
+        }
+
+        var timeout = read(roles.TimeoutRole)
 
         toastModel.append({
-            notifId: popupRoot.notificationsModel.data(idx, NotificationManager.Notifications.IdRole),
-            summary: popupRoot.notificationsModel.data(idx, NotificationManager.Notifications.SummaryRole) || "",
-            body: popupRoot.notificationsModel.data(idx, NotificationManager.Notifications.BodyRole) || "",
-            appName: popupRoot.notificationsModel.data(idx, NotificationManager.Notifications.ApplicationNameRole) || "",
-            timeoutMs: (timeout && timeout > 0) ? timeout : 5000
+            notifId: read(roles.IdRole),
+            summary: read(roles.SummaryRole) || "",
+            body: read(roles.BodyRole) || "",
+            appName: read(roles.ApplicationNameRole) || "",
+            timeoutMs: (timeout && timeout > 0) ? timeout : popupRoot.defaultTimeoutMs
         })
     }
 

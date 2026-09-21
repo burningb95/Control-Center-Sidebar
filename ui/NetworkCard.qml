@@ -1,18 +1,20 @@
 import QtQuick
 import QtQuick.Layouts
 
+import "../code" as Code
+
 ColumnLayout {
     id: root
 
     Layout.fillWidth: true
     spacing: 12
 
-    property color panelColor: "#120d16"
-    property color borderColor: "#39233f"
-    property color neonPink: "#ff2bd6"
-    property color neonRed: "#ff1744"
-    property color textPrimary: "#f4edf5"
-    property color textSecondary: "#aa9cac"
+    property color panelColor: Code.Theme.panel
+    property color borderColor: Code.Theme.borderColor
+    property color neonPink: Code.Theme.neonPink
+    property color neonRed: Code.Theme.neonRed
+    property color textPrimary: Code.Theme.textPrimary
+    property color textSecondary: Code.Theme.textSecondary
 
     property string statusText: "ONLINE"
     property string titleText: "Network"

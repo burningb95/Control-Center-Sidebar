@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Window
 import Qt.labs.settings 1.0
 
 import "../code" as Code
@@ -12,9 +11,11 @@ ColumnLayout {
     Layout.topMargin: 8
     spacing: 8
 
+    // Explicit fileName: without one, Settings lands in a shared
+    // QtProject/Qml Runtime.conf, since qml6 sets no application name.
     Settings {
         id: settings
-        fileName: "/home/camron/.local/share/garuda-neon-sidebar/notes.conf"
+        fileName: Qt.resolvedUrl("../notes.conf").toString().replace("file://", "")
         category: "Notes"
         property string notesJson: "[]"
     }
@@ -78,14 +79,15 @@ ColumnLayout {
         settings.notesJson = JSON.stringify(out)
     }
 
+    // Jumps to the existing blank slot if there is one, so repeated presses
+    // don't pile up empty notes.
     function addNote() {
         var pc = root.pinnedCount()
-        if (pc < notesModel.count && notesModel.get(pc).text.length === 0) {
-            notesList.currentIndex = pc
-        } else {
+        var blankAlreadyThere = pc < notesModel.count && notesModel.get(pc).text.length === 0
+        if (!blankAlreadyThere) {
             notesModel.insert(pc, { id: Date.now(), text: "", pinned: false, createdAt: Date.now() })
-            notesList.currentIndex = pc
         }
+        notesList.currentIndex = pc
     }
 
     function removeNote(index) {
@@ -283,12 +285,28 @@ ColumnLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
 
-                        Text {
+                        RowLayout {
                             anchors.fill: parent
                             visible: editor.text.length === 0 && !editor.activeFocus
-                            text: "💬  Write something down…."
-                            color: Code.Theme.textSecondary
-                            font.pixelSize: 11
+                            spacing: 6
+
+                            Image {
+                                Layout.preferredWidth: 14
+                                Layout.preferredHeight: 14
+                                Layout.alignment: Qt.AlignTop
+                                source: "file:///usr/share/icons/candy-icons/apps/scalable/1E64_notepad.0.svg"
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                                sourceSize.width: 28
+                                sourceSize.height: 28
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Write something down…."
+                                color: Code.Theme.textSecondary
+                                font.pixelSize: 11
+                            }
                         }
 
                         TextEdit {

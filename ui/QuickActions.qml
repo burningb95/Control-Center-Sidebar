@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-import org.kde.plasma.plasma5support as P5Support
+import "../code" as Code
 
 ColumnLayout {
     id: root
@@ -9,13 +9,12 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: 12
 
-    property color panelColor: "#1b1220"
-    property color hoverColor: "#24162b"
-    property color borderColor: "#39233f"
-    property color hoverBorderColor: "#ff2bd6"
-    property color iconColor: "#ff2bd6"
-    property color labelColor: "#aa9cac"
-    property color textSecondary: "#aa9cac"
+    property color panelColor: Code.Theme.card
+    property color hoverColor: Code.Theme.cardHover
+    property color borderColor: Code.Theme.borderColor
+    property color hoverBorderColor: Code.Theme.neonPink
+    property color iconColor: Code.Theme.neonPink
+    property color textSecondary: Code.Theme.textSecondary
 
     property var actions: [
         { label: "DISPLAY", icon: "☼" },
@@ -24,19 +23,13 @@ ColumnLayout {
         { label: "POWER", icon: "⏻" }
     ]
 
-    signal actionTriggered(string label)
-
     property QtObject networkManager: null
     property QtObject audioManager: null
 
-    property P5Support.DataSource _launcher: P5Support.DataSource {
-        engine: "executable"
-        connectedSources: []
-        onNewData: (sourceName, data) => disconnectSource(sourceName)
-    }
+    property QtObject _launcher: Code.CommandRunner {}
 
     function _launch(command) {
-        _launcher.connectSource(command)
+        _launcher.run(command)
     }
 
     function handleAction(label) {
@@ -85,12 +78,9 @@ ColumnLayout {
                 idleBorderColor: root.borderColor
                 hoverBorderColor: root.hoverBorderColor
                 iconColor: root.iconColor
-                labelColor: root.labelColor
+                labelColor: root.textSecondary
 
-                onClicked: {
-                    root.actionTriggered(modelData.label)
-                    root.handleAction(modelData.label)
-                }
+                onClicked: root.handleAction(modelData.label)
             }
         }
     }

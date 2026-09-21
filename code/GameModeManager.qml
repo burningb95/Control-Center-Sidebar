@@ -9,29 +9,22 @@ QtObject {
 
     readonly property string pidFile: "/tmp/garuda-neon-sidebar-gamemode.pid"
 
+    // GameMode is scoped to a registered process rather than being a global
+    // switch, so "on" parks a dummy process under gamemoderun and "off" kills
+    // it. The pidfile is how the two halves find each other across toggles.
     function toggle() {
         if (manager.active) {
-            _stopper.connectSource(
+            _command.run(
                 "bash -c 'kill $(cat " + manager.pidFile + ") 2>/dev/null; rm -f " + manager.pidFile + "'"
             )
         } else {
-            _starter.connectSource(
+            _command.run(
                 "bash -c 'gamemoderun sleep infinity & echo $! > " + manager.pidFile + "'"
             )
         }
     }
 
-    property P5Support.DataSource _starter: P5Support.DataSource {
-        engine: "executable"
-        connectedSources: []
-        onNewData: (sourceName, data) => disconnectSource(sourceName)
-    }
-
-    property P5Support.DataSource _stopper: P5Support.DataSource {
-        engine: "executable"
-        connectedSources: []
-        onNewData: (sourceName, data) => disconnectSource(sourceName)
-    }
+    property QtObject _command: CommandRunner {}
 
     readonly property string statusCommand: "gamemoded -s"
 

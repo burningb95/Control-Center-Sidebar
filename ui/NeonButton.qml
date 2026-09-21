@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 
+import "../code" as Code
+
 Rectangle {
     id: root
 
@@ -11,12 +13,12 @@ Rectangle {
     property string label: ""
     property string icon: ""
 
-    property color idleColor: "#1b1220"
-    property color hoverColor: "#24162b"
-    property color idleBorderColor: "#39233f"
-    property color hoverBorderColor: "#ff2bd6"
-    property color iconColor: "#ff2bd6"
-    property color labelColor: "#aa9cac"
+    property color idleColor: Code.Theme.card
+    property color hoverColor: Code.Theme.cardHover
+    property color idleBorderColor: Code.Theme.borderColor
+    property color hoverBorderColor: Code.Theme.neonPink
+    property color iconColor: Code.Theme.neonPink
+    property color labelColor: Code.Theme.textSecondary
 
     signal clicked()
 

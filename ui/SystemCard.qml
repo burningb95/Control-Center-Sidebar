@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
 
+import "../code" as Code
+
 ColumnLayout {
     id: root
 
@@ -9,11 +11,11 @@ ColumnLayout {
 
     property QtObject sysMonitor: null
 
-    property color panelColor: "#120d16"
-    property color borderColor: "#39233f"
-    property color accentColor: "#ff1744"
-    property color textPrimary: "#f4edf5"
-    property color textSecondary: "#aa9cac"
+    property color panelColor: Code.Theme.panel
+    property color borderColor: Code.Theme.borderColor
+    property color accentColor: Code.Theme.neonRed
+    property color textPrimary: Code.Theme.textPrimary
+    property color textSecondary: Code.Theme.textSecondary
 
     Text {
         text: "SYSTEM"

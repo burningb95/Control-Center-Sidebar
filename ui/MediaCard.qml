@@ -1,21 +1,23 @@
 import QtQuick
 import QtQuick.Layouts
 
+import "../code" as Code
+
 ColumnLayout {
     id: root
 
     Layout.fillWidth: true
     spacing: 12
 
-    property color panelColor: "#120d16"
-    property color borderColor: "#39233f"
-    property color neonRed: "#ff1744"
-    property color neonPurple: "#9c27ff"
-    property color textPrimary: "#f4edf5"
-    property color textSecondary: "#aa9cac"
+    property color panelColor: Code.Theme.panel
+    property color borderColor: Code.Theme.borderColor
+    property color neonRed: Code.Theme.neonRed
+    property color neonPurple: Code.Theme.neonPurple
+    property color textPrimary: Code.Theme.textPrimary
+    property color textSecondary: Code.Theme.textSecondary
 
     property string trackTitle: "Nothing playing"
-    property string trackSubtitle: "MPRIS integration coming next"
+    property string trackSubtitle: "No active media player"
 
     Text {
         text: "NOW PLAYING"
@@ -57,7 +59,7 @@ ColumnLayout {
                 Text {
                     anchors.centerIn: parent
                     text: "♪"
-                    color: "white"
+                    color: Code.Theme.textPrimary
                     font.pixelSize: 28
                 }
             }

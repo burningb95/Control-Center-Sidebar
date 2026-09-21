@@ -128,9 +128,9 @@ ColumnLayout {
             property bool accent: false
             color: mouse.containsMouse
                    ? Code.Theme.cardHover
-                   : (accent ? Qt.rgba(Code.Theme.neonRed.r, Code.Theme.neonRed.g, Code.Theme.neonRed.b, 0.18) : Code.Theme.card)
+                   : (btn.accent ? Qt.rgba(Code.Theme.neonRed.r, Code.Theme.neonRed.g, Code.Theme.neonRed.b, 0.18) : Code.Theme.card)
             border.width: 1
-            border.color: accent ? Code.Theme.neonRed : Code.Theme.borderColor
+            border.color: btn.accent ? Code.Theme.neonRed : Code.Theme.borderColor
 
             signal pressed()
 
@@ -158,9 +158,7 @@ ColumnLayout {
         CalcButton { label: "7"; onPressed: root.digitPressed("7") }
         CalcButton { label: "8"; onPressed: root.digitPressed("8") }
         CalcButton { label: "9"; onPressed: root.digitPressed("9") }
-        CalcButton { label: "+"; accent: true; onPressed: root.opPressed("+")
-            Layout.rowSpan: 2
-        }
+        CalcButton { label: "+"; accent: true; Layout.rowSpan: 2; onPressed: root.opPressed("+") }
 
         CalcButton { label: "4"; onPressed: root.digitPressed("4") }
         CalcButton { label: "5"; onPressed: root.digitPressed("5") }
@@ -169,9 +167,7 @@ ColumnLayout {
         CalcButton { label: "1"; onPressed: root.digitPressed("1") }
         CalcButton { label: "2"; onPressed: root.digitPressed("2") }
         CalcButton { label: "3"; onPressed: root.digitPressed("3") }
-        CalcButton { label: "="; accent: true; onPressed: root.equalsPressed()
-            Layout.rowSpan: 2
-        }
+        CalcButton { label: "="; accent: true; Layout.rowSpan: 2; onPressed: root.equalsPressed() }
 
         CalcButton { label: "0"; Layout.columnSpan: 2; onPressed: root.digitPressed("0") }
         CalcButton { label: "."; onPressed: root.decimalPressed() }

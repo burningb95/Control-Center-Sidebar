@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 
 import "../code" as Code
 
@@ -18,46 +17,37 @@ Item {
 
     signal clicked()
 
-    MultiEffect {
-        anchors.centerIn: iconGroup
-        width: iconGroup.width * 2.6
-        height: iconGroup.height * 2.6
-        source: iconGroup
-        visible: root.active
-        blurEnabled: true
-        blur: 1.0
-        blurMax: 64
-        colorization: 1.0
-        colorizationColor: root.activeColor
-        opacity: 1.0
-    }
+    // Active state is shown as a backlight: many true circles stacked at
+    // increasing scale and exponentially decreasing opacity, approximating
+    // a soft radial gradient. This stays perfectly round at any size,
+    // unlike a blurred shader effect (MultiEffect), which showed visible
+    // square edges at high blur radii. The tight scale range and fine step
+    // count keep the halo close to the icon and fuzzy rather than a few
+    // visible concentric rings.
+    readonly property var _glowLayers: [
+        { scale: 1.0, opacity: 0.10 },
+        { scale: 1.12, opacity: 0.075 },
+        { scale: 1.24, opacity: 0.056 },
+        { scale: 1.38, opacity: 0.041 },
+        { scale: 1.52, opacity: 0.030 },
+        { scale: 1.68, opacity: 0.021 },
+        { scale: 1.85, opacity: 0.014 },
+        { scale: 2.05, opacity: 0.009 },
+        { scale: 2.3, opacity: 0.005 }
+    ]
 
-    MultiEffect {
-        anchors.centerIn: iconGroup
-        width: iconGroup.width * 1.6
-        height: iconGroup.height * 1.6
-        source: iconGroup
-        visible: root.active
-        blurEnabled: true
-        blur: 0.5
-        blurMax: 20
-        colorization: 1.0
-        colorizationColor: root.activeColor
-        opacity: 1.0
-    }
+    Repeater {
+        model: root._glowLayers
 
-    MultiEffect {
-        anchors.centerIn: iconGroup
-        width: iconGroup.width * 1.1
-        height: iconGroup.height * 1.1
-        source: iconGroup
-        visible: root.active
-        blurEnabled: true
-        blur: 0.2
-        blurMax: 6
-        colorization: 1.0
-        colorizationColor: root.activeColor
-        opacity: 1.0
+        delegate: Rectangle {
+            anchors.centerIn: iconGroup
+            width: iconGroup.width * modelData.scale
+            height: width
+            radius: width / 2
+            color: root.activeColor
+            opacity: modelData.opacity
+            visible: root.active
+        }
     }
 
     Item {

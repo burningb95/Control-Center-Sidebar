@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
+import Qt.labs.settings 1.0
 
 import org.kde.layershell 1.0 as LayerShell
 import org.kde.notificationmanager as NotificationManager
@@ -15,11 +16,31 @@ Window {
     property int contentWidth: 320
     property bool pinned: false
 
+    property real panelOpacity: 0.85
+    property real panelBorderOpacity: 0.35
+    property int revealDelay: 100
+    property int closeDelay: 500
+
+    // Explicit fileName: without one, Settings lands in a shared
+    // QtProject/Qml Runtime.conf, since qml6 sets no application name.
+    Settings {
+        id: sidebarSettings
+        fileName: Qt.resolvedUrl("../sidebar.conf").toString().replace("file://", "")
+        category: "Sidebar"
+        property alias handleWidth: root.handleWidth
+        property alias contentWidth: root.contentWidth
+        property alias panelOpacity: root.panelOpacity
+        property alias panelBorderOpacity: root.panelBorderOpacity
+        property alias revealDelay: root.revealDelay
+        property alias closeDelay: root.closeDelay
+    }
+
     width: shell.width
     height: Screen.height
     color: "transparent"
     flags: Qt.FramelessWindowHint
     visible: true
+    title: "Side_bar_control_center"
 
     LayerShell.Window.anchors: LayerShell.Window.AnchorTop
         | LayerShell.Window.AnchorBottom
@@ -29,6 +50,7 @@ Window {
     LayerShell.Window.layer: LayerShell.Window.LayerTop
     LayerShell.Window.keyboardInteractivity: LayerShell.Window.KeyboardInteractivityOnDemand
     LayerShell.Window.exclusionZone: root.handleWidth
+    LayerShell.Window.scope: "Side_bar_control_center"
 
     readonly property QtObject audioManager: Code.AudioManager {}
     readonly property QtObject brightnessManager: Code.BrightnessManager {}
@@ -39,15 +61,67 @@ Window {
         showJobs: false
     }
 
-    property P5Support.DataSource _launcher: P5Support.DataSource {
-        engine: "executable"
-        connectedSources: []
-        onNewData: (sourceName, data) => disconnectSource(sourceName)
-    }
+    property QtObject _launcher: Code.CommandRunner {}
 
     function launch(command) {
-        root._launcher.connectSource(command)
+        root._launcher.run(command)
     }
+
+    // KWin-side helper (code/kwin-sidebar-helper.js): registers the
+    // Meta+Shift+Space global shortcut and watches for windows covering the
+    // activation strip. As a sandboxed layer-shell client the sidebar has no
+    // other way to see window state or own a global shortcut, so state comes
+    // back over the journal, polled below.
+    readonly property string _helperScriptPath: "/home/camron/.local/share/garuda-neon-sidebar/code/kwin-sidebar-helper.js"
+
+    function loadKwinHelper() {
+        root.launch("bash -c 'qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript garuda-neon-sidebar-helper >/dev/null 2>&1; ID=$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript \"" + root._helperScriptPath + "\" garuda-neon-sidebar-helper); qdbus6 org.kde.KWin \"/Scripting/Script$ID\" org.kde.kwin.Script.run'")
+    }
+
+    property bool activationBlocked: false
+    property string _lastHotkeyTag: ""
+
+    readonly property string _helperPollCommand: "journalctl -n 60 --no-pager 2>/dev/null | grep -E 'GARUDA_SIDEBAR_(HOTKEY|OCCLUSION):' | awk '{last[$0 ~ /HOTKEY/ ? \"H\" : \"O\"] = $0} END {print last[\"H\"]; print last[\"O\"]}'"
+
+    property P5Support.DataSource _helperStatusSource: P5Support.DataSource {
+        engine: "executable"
+        connectedSources: []
+        onNewData: (sourceName, data) => {
+            const out = (data["stdout"] || "").trim()
+            const lines = out.split("\n")
+            const hotkeyLine = lines[0] || ""
+            const occlusionLine = lines[1] || ""
+
+            const hotkeyMatch = hotkeyLine.match(/GARUDA_SIDEBAR_HOTKEY:(\d+)/)
+            if (hotkeyMatch && hotkeyMatch[1] !== root._lastHotkeyTag) {
+                root._lastHotkeyTag = hotkeyMatch[1]
+                root.forceOpen()
+            }
+
+            const occlusionMatch = occlusionLine.match(/GARUDA_SIDEBAR_OCCLUSION:([01])/)
+            if (occlusionMatch) {
+                root.activationBlocked = occlusionMatch[1] === "1"
+            }
+
+            disconnectSource(sourceName)
+        }
+    }
+
+    Timer {
+        id: _helperPollTimer
+        interval: 600
+        running: true
+        repeat: true
+        onTriggered: root._helperStatusSource.connectSource(root._helperPollCommand)
+    }
+
+    function forceOpen() {
+        closeTimer.stop()
+        shell.state = "open"
+        closeTimer.restart()
+    }
+
+    Component.onCompleted: root.loadKwinHelper()
 
     function reloadSidebar() {
         root.launch("bash -c 'nohup qml6 /home/camron/.local/share/garuda-neon-sidebar/ui/control-center.qml > /dev/null 2>&1 & disown'")
@@ -69,57 +143,39 @@ Window {
             root.launch("plasma-shutdown")
             break
         case "settings":
-            root.launch("systemsettings")
+            root.openSettings()
             break
         }
     }
 
-    readonly property date bootTime: new Date(Date.now() - (1 * 86400000 + 11 * 3600000 + 39 * 60000))
-    readonly property date today: new Date()
-    readonly property var weekdayLabels: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
-
-    function formatUptime() {
-        var ms = Date.now() - root.bootTime.getTime()
-        var days = Math.floor(ms / 86400000)
-        var hours = Math.floor((ms % 86400000) / 3600000)
-        var mins = Math.floor((ms % 3600000) / 60000)
-        return "Up " + days + "d, " + hours + "h, " + mins + "m"
+    function openSettings() {
+        var comp = Qt.createComponent("SettingsView.qml")
+        if (comp.status === Component.Ready) {
+            var win = comp.createObject(root, { sidebar: root })
+            win.show()
+            win.raise()
+            win.requestActivate()
+        }
     }
 
-    function buildCalendarDays() {
-        var year = root.today.getFullYear()
-        var month = root.today.getMonth()
-        var daysInMonth = new Date(year, month + 1, 0).getDate()
-        var firstDow = (new Date(year, month, 1).getDay() + 6) % 7
-        var daysInPrevMonth = new Date(year, month, 0).getDate()
+    property date currentTime: new Date()
 
-        var cells = []
-        for (var i = 0; i < firstDow; i++) {
-            cells.push({ day: daysInPrevMonth - firstDow + i + 1, current: false, isToday: false })
-        }
-        for (var d = 1; d <= daysInMonth; d++) {
-            cells.push({ day: d, current: true, isToday: d === root.today.getDate() })
-        }
-        var remainder = cells.length % 7
-        if (remainder > 0) {
-            var trailing = 7 - remainder
-            for (var t = 1; t <= trailing; t++) {
-                cells.push({ day: t, current: false, isToday: false })
-            }
-        }
-        return cells
+    function formatTime() {
+        return Qt.formatTime(root.currentTime, "h:mm AP")
     }
 
-    readonly property var calendarDays: buildCalendarDays()
-    readonly property var monthLabel: Qt.formatDate(root.today, "MMMM yyyy")
+    // Icon sets ship with the system icon themes; see claude.md.
+    readonly property string candyIcons: "file:///usr/share/icons/candy-icons/apps/scalable"
+    readonly property string beautyLineActions: "file:///usr/share/icons/BeautyLine/actions/scalable"
+    readonly property string beautyLineApps: "file:///usr/share/icons/BeautyLine/apps/scalable"
 
     readonly property var calendarTabs: [
-        { id: "calendar", iconSource: "file:///usr/share/icons/candy-icons/apps/scalable/gnome-calendar.svg" },
-        { id: "todo", iconSource: "file:///usr/share/icons/BeautyLine/actions/scalable/fm-details.svg" },
-        { id: "timer", iconSource: "file:///usr/share/icons/BeautyLine/actions/scalable/dino-status-away.svg" },
-        { id: "calculator", iconSource: "file:///usr/share/icons/candy-icons/apps/scalable/gnome-calculator.svg" }
+        { id: "todo", iconSource: root.beautyLineActions + "/fm-details.svg" },
+        { id: "timer", iconSource: root.beautyLineActions + "/dino-status-away.svg" },
+        { id: "calculator", iconSource: root.candyIcons + "/gnome-calculator.svg" },
+        { id: "search", iconSource: root.candyIcons + "/org.kde.kstars.svg" }
     ]
-    property string calendarView: "calendar"
+    property string calendarView: "todo"
 
     onPinnedChanged: {
         if (root.pinned) {
@@ -132,13 +188,13 @@ Window {
 
     Timer {
         id: revealTimer
-        interval: 100
+        interval: root.revealDelay
         onTriggered: shell.state = "open"
     }
 
     Timer {
         id: closeTimer
-        interval: 500
+        interval: root.closeDelay
         onTriggered: {
             if (!root.pinned) {
                 shell.state = "closed"
@@ -190,11 +246,7 @@ Window {
             onHoveredChanged: {
                 if (hoverHandler.hovered) {
                     closeTimer.stop()
-                    if (shell.state === "closed") {
-                        revealTimer.restart()
-                    }
                 } else {
-                    revealTimer.stop()
                     if (!root.pinned) {
                         closeTimer.restart()
                     }
@@ -208,8 +260,34 @@ Window {
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             anchors.left: parent.left
-            color: Code.Theme.neonRed
-            opacity: 0.85
+            color: "transparent"
+        }
+
+        // Only the bottom third of the invisible handle strip wakes the
+        // panel, so an idle cursor grazing the left edge elsewhere on the
+        // screen doesn't pop it open — opening takes a deliberate move down.
+        Item {
+            id: activationZone
+            width: root.handleWidth
+            height: parent.height / 3
+            anchors.left: parent.left
+            anchors.bottom: parent.bottom
+
+            HoverHandler {
+                id: activationHoverHandler
+                onHoveredChanged: {
+                    if (activationHoverHandler.hovered) {
+                        if (!root.activationBlocked) {
+                            closeTimer.stop()
+                            if (shell.state === "closed") {
+                                revealTimer.restart()
+                            }
+                        }
+                    } else {
+                        revealTimer.stop()
+                    }
+                }
+            }
         }
 
         Rectangle {
@@ -219,9 +297,9 @@ Window {
             anchors.bottom: parent.bottom
             anchors.left: handle.right
             radius: 22
-            color: Qt.rgba(Code.Theme.background.r, Code.Theme.background.g, Code.Theme.background.b, 0.85)
+            color: Qt.rgba(Code.Theme.background.r, Code.Theme.background.g, Code.Theme.background.b, root.panelOpacity)
             border.width: 1
-            border.color: Qt.rgba(Code.Theme.neonRed.r, Code.Theme.neonRed.g, Code.Theme.neonRed.b, 0.35)
+            border.color: Qt.rgba(Code.Theme.neonRed.r, Code.Theme.neonRed.g, Code.Theme.neonRed.b, root.panelBorderOpacity)
 
             ColumnLayout {
                 anchors.fill: parent
@@ -234,7 +312,7 @@ Window {
 
                     Text {
                         Layout.fillWidth: true
-                        text: "⌁  " + root.formatUptime()
+                        text: root.formatTime()
                         color: Code.Theme.textSecondary
                         font.pixelSize: 12
                         elide: Text.ElideRight
@@ -273,18 +351,18 @@ Window {
                     spacing: 10
 
                     PillSlider {
-                        icon: "☀"
+                        iconSource: root.beautyLineActions + "/brightness-high-symbolic.svg"
                         value: root.brightnessManager.value
                         enabled: root.brightnessManager.available
-                        fillColor: Code.Theme.neonRed
+                        fillColor: Code.Theme.neonPink
                         trackColor: Code.Theme.card
                         onMoved: (v) => root.brightnessManager.setValue(v)
                     }
 
                     PillSlider {
-                        icon: "🔊"
+                        iconSource: root.beautyLineActions + "/audio-volume-high-symbolic.svg"
                         value: root.audioManager.volume / 100
-                        fillColor: Code.Theme.neonRed
+                        fillColor: Code.Theme.neonPink
                         trackColor: Code.Theme.card
                         onMoved: (v) => root.audioManager.setVolume(v * 100)
                     }
@@ -295,31 +373,31 @@ Window {
                     spacing: 10
 
                     CircleIconButton {
-                        iconSource: "file:///usr/share/icons/candy-icons/apps/scalable/appimagekit-kitty.svg"
+                        iconSource: root.candyIcons + "/appimagekit-kitty.svg"
                         onClicked: root.launch("qdbus6 org.freedesktop.ScreenSaver /ScreenSaver Lock")
                     }
 
                     CircleIconButton {
-                        iconSource: "file:///usr/share/icons/candy-icons/apps/scalable/stellarium.svg"
+                        iconSource: root.candyIcons + "/stellarium.svg"
                         active: root.doNotDisturb
                         onClicked: root.doNotDisturb = !root.doNotDisturb
                     }
 
                     CircleIconButton {
                         id: keepAwakeButton
-                        iconSource: "file:///usr/share/icons/BeautyLine/apps/scalable/io.github.f3d_app.f3d.svg"
+                        iconSource: root.beautyLineApps + "/io.github.f3d_app.f3d.svg"
                         active: root.awakeManager.active
                         onClicked: root.awakeManager.toggle()
                     }
 
                     CircleIconButton {
-                        iconSource: "file:///usr/share/icons/candy-icons/apps/scalable/falkon.svg"
+                        iconSource: root.candyIcons + "/falkon.svg"
                         active: root.gameModeManager.active
                         onClicked: root.gameModeManager.toggle()
                     }
 
                     CircleIconButton {
-                        iconSource: "file:///usr/share/icons/candy-icons/apps/scalable/umbrello.svg"
+                        iconSource: root.candyIcons + "/umbrello.svg"
                         badgeText: root.notificationsModel.count > 0 ? String(root.notificationsModel.count) : ""
                         onClicked: {
                             for (var i = root.notificationsModel.count - 1; i >= 0; --i) {
@@ -360,88 +438,6 @@ Window {
                             Layout.fillHeight: true
                             currentIndex: Math.max(0, root.calendarTabs.findIndex((t) => t.id === root.calendarView))
 
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                spacing: 8
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-
-                                    Text {
-                                        text: "▾"
-                                        color: Code.Theme.textSecondary
-                                        font.pixelSize: 12
-                                    }
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        text: root.monthLabel
-                                        color: Code.Theme.textPrimary
-                                        font.pixelSize: 13
-                                        font.bold: true
-                                        horizontalAlignment: Text.AlignHCenter
-                                    }
-
-                                    Text {
-                                        text: "‹"
-                                        color: Code.Theme.textSecondary
-                                        font.pixelSize: 13
-                                    }
-
-                                    Text {
-                                        text: "›"
-                                        color: Code.Theme.textSecondary
-                                        font.pixelSize: 13
-                                    }
-                                }
-
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    columns: 7
-                                    rowSpacing: 6
-                                    columnSpacing: 2
-
-                                    Repeater {
-                                        model: root.weekdayLabels
-
-                                        delegate: Text {
-                                            Layout.fillWidth: true
-                                            text: modelData
-                                            color: Code.Theme.textSecondary
-                                            font.pixelSize: 9
-                                            font.bold: true
-                                            horizontalAlignment: Text.AlignHCenter
-                                        }
-                                    }
-
-                                    Repeater {
-                                        model: root.calendarDays
-
-                                        delegate: Rectangle {
-                                            Layout.fillWidth: true
-                                            Layout.preferredHeight: 24
-                                            radius: 12
-                                            color: modelData.isToday ? Code.Theme.neonRed : "transparent"
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: modelData.day
-                                                font.pixelSize: 10
-                                                color: modelData.isToday
-                                                       ? Code.Theme.textPrimary
-                                                       : (modelData.current ? Code.Theme.textPrimary : Code.Theme.textSecondary)
-                                                opacity: modelData.current ? 1.0 : 0.4
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Item {
-                                    Layout.fillHeight: true
-                                }
-                            }
-
                             TodoView {
                             }
 
@@ -449,6 +445,9 @@ Window {
                             }
 
                             CalculatorView {
+                            }
+
+                            SearchView {
                             }
                         }
 
@@ -485,6 +484,9 @@ Window {
                         }
                     }
                 }
+
+                WeekStrip {
+                }
             }
         }
     }
@@ -493,7 +495,11 @@ Window {
         interval: 60000
         running: true
         repeat: true
-        onTriggered: root.update()
+        triggeredOnStart: true
+        onTriggered: {
+            root.update()
+            root.currentTime = new Date()
+        }
     }
 
     NotificationPopups {

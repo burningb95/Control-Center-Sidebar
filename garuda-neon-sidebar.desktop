@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Exec=qml6 /home/camron/.local/share/garuda-neon-sidebar/ui/Sidebar.qml
+Exec=qml6 /home/camron/.local/share/garuda-neon-sidebar/ui/control-center.qml
 Name=Garuda Neon Sidebar
-Comment=Right-edge system sidebar (LayerShellQt)
+Comment=Left-edge system sidebar (LayerShellQt)
 NoDisplay=true
 X-GNOME-Autostart-enabled=true

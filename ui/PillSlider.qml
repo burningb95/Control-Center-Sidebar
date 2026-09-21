@@ -10,6 +10,7 @@ RowLayout {
     spacing: 10
 
     property string icon: ""
+    property string iconSource: ""
     property real value: 0.5
     property color fillColor: Code.Theme.neonRed
     property color trackColor: Code.Theme.card
@@ -23,11 +24,23 @@ RowLayout {
     opacity: root.enabled ? 1.0 : 0.4
 
     Text {
+        visible: root.iconSource.length === 0
         text: root.icon
         color: Code.Theme.textPrimary
         font.pixelSize: 14
         Layout.preferredWidth: 18
         horizontalAlignment: Text.AlignHCenter
+    }
+
+    Image {
+        visible: root.iconSource.length > 0
+        source: root.iconSource
+        fillMode: Image.PreserveAspectFit
+        smooth: true
+        Layout.preferredWidth: 18
+        Layout.preferredHeight: 18
+        sourceSize.width: 36
+        sourceSize.height: 36
     }
 
     Rectangle {

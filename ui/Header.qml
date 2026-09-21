@@ -1,13 +1,15 @@
 import QtQuick
 import QtQuick.Layouts
 
+import "../code" as Code
+
 ColumnLayout {
     id: root
 
     spacing: 2
 
-    property color primaryColor: "white"
-    property color accentColor: "pink"
+    property color primaryColor: Code.Theme.textPrimary
+    property color accentColor: Code.Theme.neonPink
     property bool pinned: false
 
     signal pinToggled()

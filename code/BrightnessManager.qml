@@ -7,7 +7,6 @@ QtObject {
     property int updateInterval: 3000
 
     property bool available: false
-    property bool checked: false
     property int brightness: 0
     property int maxBrightness: 100
 
@@ -26,7 +25,7 @@ QtObject {
         const clampedFraction = Math.max(0, Math.min(1, fraction))
         const target = Math.round(clampedFraction * manager.maxBrightness)
         manager.brightness = target
-        _setter.connectSource(
+        _command.run(
             "qdbus6 " + manager.dbusService + " " + manager.dbusPath + " " +
             manager.dbusIface + ".setBrightness " + target
         )
@@ -52,18 +51,14 @@ QtObject {
                 manager.brightness = cur
                 manager.available = true
             } else {
+                // No backlight (desktop), or PowerDevil unavailable.
                 manager.available = false
             }
-            manager.checked = true
             disconnectSource(sourceName)
         }
     }
 
-    property P5Support.DataSource _setter: P5Support.DataSource {
-        engine: "executable"
-        connectedSources: []
-        onNewData: (sourceName, data) => disconnectSource(sourceName)
-    }
+    property QtObject _command: CommandRunner {}
 
     property Timer _pollTimer: Timer {
         interval: manager.updateInterval

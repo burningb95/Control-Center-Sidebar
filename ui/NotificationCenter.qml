@@ -11,9 +11,14 @@ ColumnLayout {
     spacing: 10
 
     property QtObject notificationsModel: null
+
+    // X position (within this section's width) to centre the empty state on,
+    // so it lines up with a specific icon in the toggle row above. Negative
+    // means "just centre it on the panel".
     property real alignCenterX: -1
 
     readonly property int count: notificationsModel ? notificationsModel.count : 0
+    readonly property int emptyBadgeSize: 64
 
     function clearAll() {
         if (!notificationsModel) {
@@ -25,17 +30,19 @@ ColumnLayout {
     }
 
     ColumnLayout {
-        Layout.preferredWidth: 64
-        Layout.leftMargin: root.alignCenterX >= 0 ? Math.max(0, root.alignCenterX - 32) : 0
+        Layout.preferredWidth: root.emptyBadgeSize
+        Layout.leftMargin: root.alignCenterX >= 0
+                           ? Math.max(0, root.alignCenterX - root.emptyBadgeSize / 2)
+                           : 0
         Layout.alignment: root.alignCenterX >= 0 ? Qt.AlignLeft : Qt.AlignHCenter
         spacing: 10
         visible: root.count === 0
 
         Rectangle {
             Layout.alignment: Qt.AlignHCenter
-            width: 64
-            height: 64
-            radius: 32
+            width: root.emptyBadgeSize
+            height: root.emptyBadgeSize
+            radius: width / 2
             color: Code.Theme.card
             border.width: 1
             border.color: Code.Theme.borderColor

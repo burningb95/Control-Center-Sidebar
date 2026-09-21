@@ -26,11 +26,7 @@ QtObject {
 
     readonly property string gpuCommand: "bash -c 'command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits || echo NA'"
 
-    function _run(source, command) {
-        source.connectSource(command)
-    }
-
-    property P5Support.DataSource cpuSource: P5Support.DataSource {
+    property P5Support.DataSource _cpuSource: P5Support.DataSource {
         engine: "executable"
         connectedSources: []
         onNewData: (sourceName, data) => {
@@ -46,7 +42,7 @@ QtObject {
         }
     }
 
-    property P5Support.DataSource ramSource: P5Support.DataSource {
+    property P5Support.DataSource _ramSource: P5Support.DataSource {
         engine: "executable"
         connectedSources: []
         onNewData: (sourceName, data) => {
@@ -64,7 +60,7 @@ QtObject {
         }
     }
 
-    property P5Support.DataSource gpuSource: P5Support.DataSource {
+    property P5Support.DataSource _gpuSource: P5Support.DataSource {
         engine: "executable"
         connectedSources: []
         onNewData: (sourceName, data) => {
@@ -83,15 +79,15 @@ QtObject {
         }
     }
 
-    property Timer pollTimer: Timer {
+    property Timer _pollTimer: Timer {
         interval: monitor.updateInterval
         running: true
         repeat: true
         triggeredOnStart: true
         onTriggered: {
-            monitor._run(monitor.cpuSource, monitor.cpuCommand)
-            monitor._run(monitor.ramSource, monitor.ramCommand)
-            monitor._run(monitor.gpuSource, monitor.gpuCommand)
+            monitor._cpuSource.connectSource(monitor.cpuCommand)
+            monitor._ramSource.connectSource(monitor.ramCommand)
+            monitor._gpuSource.connectSource(monitor.gpuCommand)
         }
     }
 }

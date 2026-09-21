@@ -24,7 +24,6 @@ Window {
         spacing: 8
 
         TextEdit {
-            id: editor
             Layout.fillWidth: true
             Layout.fillHeight: true
             text: expandedWindow.noteText

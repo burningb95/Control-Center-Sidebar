@@ -10,26 +10,16 @@ QtObject {
     property bool muted: false
 
     function toggleMute() {
-        _toggle.connectSource("pactl set-sink-mute @DEFAULT_SINK@ toggle")
+        _command.run("pactl set-sink-mute @DEFAULT_SINK@ toggle")
     }
 
     function setVolume(percent) {
         const clamped = Math.max(0, Math.min(100, Math.round(percent)))
         manager.volume = clamped
-        _setter.connectSource("pactl set-sink-volume @DEFAULT_SINK@ " + clamped + "%")
+        _command.run("pactl set-sink-volume @DEFAULT_SINK@ " + clamped + "%")
     }
 
-    property P5Support.DataSource _toggle: P5Support.DataSource {
-        engine: "executable"
-        connectedSources: []
-        onNewData: (sourceName, data) => disconnectSource(sourceName)
-    }
-
-    property P5Support.DataSource _setter: P5Support.DataSource {
-        engine: "executable"
-        connectedSources: []
-        onNewData: (sourceName, data) => disconnectSource(sourceName)
-    }
+    property QtObject _command: CommandRunner {}
 
     readonly property string statusCommand: "bash -c '" +
         "vol=$(pactl get-sink-volume @DEFAULT_SINK@ | grep -oP \"[0-9]+(?=%)\" | head -n1); " +

@@ -132,8 +132,6 @@ Window {
 
                 Header {
                     Layout.fillWidth: true
-                    primaryColor: Code.Theme.textPrimary
-                    accentColor: Code.Theme.neonPink
                     pinned: root.pinned
                     onPinToggled: root.pinned = !root.pinned
                 }
@@ -146,21 +144,9 @@ Window {
 
                 SystemCard {
                     sysMonitor: root.sysMonitor
-                    panelColor: Code.Theme.panel
-                    borderColor: Code.Theme.borderColor
-                    accentColor: Code.Theme.neonRed
-                    textPrimary: Code.Theme.textPrimary
-                    textSecondary: Code.Theme.textSecondary
                 }
 
                 MediaCard {
-                    panelColor: Code.Theme.panel
-                    borderColor: Code.Theme.borderColor
-                    neonRed: Code.Theme.neonRed
-                    neonPurple: Code.Theme.neonPurple
-                    textPrimary: Code.Theme.textPrimary
-                    textSecondary: Code.Theme.textSecondary
-
                     trackTitle: root.mediaController.playing && root.mediaController.trackTitle.length > 0
                                 ? root.mediaController.trackTitle
                                 : "Nothing playing"
@@ -172,13 +158,6 @@ Window {
                 }
 
                 NetworkCard {
-                    panelColor: Code.Theme.panel
-                    borderColor: Code.Theme.borderColor
-                    neonPink: Code.Theme.neonPink
-                    neonRed: Code.Theme.neonRed
-                    textPrimary: Code.Theme.textPrimary
-                    textSecondary: Code.Theme.textSecondary
-
                     statusText: root.networkManager.online ? "ONLINE" : "OFFLINE"
                     subtitleText: root.networkManager.connectionName.length > 0
                                   ? root.networkManager.connectionName
@@ -186,13 +165,8 @@ Window {
                 }
 
                 QuickActions {
-                    panelColor: Code.Theme.card
-                    hoverColor: Code.Theme.cardHover
-                    borderColor: Code.Theme.borderColor
+                    // Only override where it differs from the component default.
                     hoverBorderColor: Qt.rgba(Code.Theme.neonPink.r, Code.Theme.neonPink.g, Code.Theme.neonPink.b, 0.45)
-                    iconColor: Code.Theme.neonPink
-                    labelColor: Code.Theme.textSecondary
-                    textSecondary: Code.Theme.textSecondary
 
                     networkManager: root.networkManager
                     audioManager: root.audioManager
