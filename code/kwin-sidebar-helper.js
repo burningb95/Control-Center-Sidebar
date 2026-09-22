@@ -20,7 +20,15 @@ function computeOccluded() {
     var wins = workspace.stackingOrder;
     for (var i = 0; i < wins.length; i++) {
         var w = wins[i];
-        if (w.minimized) {
+        // normalWindow excludes the desktop containment (plasmashell's
+        // folder view, reported as desktopWindow=true) and dock/panel
+        // surfaces (dock=true, e.g. Latte). Both are always present and
+        // always span x=0 at full screen width, so without this filter
+        // computeOccluded() returns true permanently — confirmed live:
+        // with only the desktop and Latte's bottom dock present, the old
+        // check reported occluded even though no actual app window was
+        // anywhere near the strip, which blocked hover-reveal entirely.
+        if (w.minimized || !w.normalWindow) {
             continue;
         }
         var g = w.frameGeometry;
@@ -44,8 +52,29 @@ function reportOcclusion() {
     }
 }
 
+// windowActivated/currentDesktopChanged alone miss a window that gets
+// dragged, resized, maximized, or minimized over the strip without ever
+// changing which window is focused (e.g. an already-active window being
+// moved with the mouse). Watch geometry/minimized state on every window
+// directly so occlusion is recomputed on the actual change that matters,
+// not just on focus changes.
+function watchWindow(w) {
+    w.frameGeometryChanged.connect(reportOcclusion);
+    w.minimizedChanged.connect(reportOcclusion);
+}
+
+var wins = workspace.stackingOrder;
+for (var i = 0; i < wins.length; i++) {
+    watchWindow(wins[i]);
+}
+
 workspace.windowActivated.connect(reportOcclusion);
 workspace.currentDesktopChanged.connect(reportOcclusion);
+workspace.windowAdded.connect(function (w) {
+    watchWindow(w);
+    reportOcclusion();
+});
+workspace.windowRemoved.connect(reportOcclusion);
 reportOcclusion();
 
 registerShortcut(

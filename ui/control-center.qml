@@ -81,7 +81,18 @@ Window {
     property bool activationBlocked: false
     property string _lastHotkeyTag: ""
 
-    readonly property string _helperPollCommand: "journalctl -n 60 --no-pager 2>/dev/null | grep -E 'GARUDA_SIDEBAR_(HOTKEY|OCCLUSION):' | awk '{last[$0 ~ /HOTKEY/ ? \"H\" : \"O\"] = $0} END {print last[\"H\"]; print last[\"O\"]}'"
+    // journalctl -n 60 | grep used to grab the tail of the WHOLE system
+    // journal and filter client-side: on a busy system (network/systemd
+    // noise etc.) more than 60 unrelated lines can land between two polls,
+    // scrolling the last GARUDA_SIDEBAR_OCCLUSION line out of that window
+    // before it's ever read. Once that happens activationBlocked gets stuck
+    // on a stale value (usually "false") until the next unrelated
+    // windowActivated/currentDesktopChanged fires — which is why hover
+    // could reveal the sidebar over another active window. journalctl's own
+    // -g/--grep does server-side filtering by message content, and -t plus
+    // -n 1 asks it directly for "the most recent GARUDA_SIDEBAR_* line",
+    // so it can never be pushed out by unrelated log volume.
+    readonly property string _helperPollCommand: "h=$(journalctl -b 0 -t kwin_wayland -g 'GARUDA_SIDEBAR_HOTKEY:' -n 1 --no-pager -o cat 2>/dev/null); o=$(journalctl -b 0 -t kwin_wayland -g 'GARUDA_SIDEBAR_OCCLUSION:' -n 1 --no-pager -o cat 2>/dev/null); printf '%s\\n%s\\n' \"$h\" \"$o\""
 
     property P5Support.DataSource _helperStatusSource: P5Support.DataSource {
         engine: "executable"
@@ -140,7 +151,7 @@ Window {
             root.reloadSidebar()
             break
         case "power":
-            root.launch("plasma-shutdown")
+            root.openPowerMenu()
             break
         case "settings":
             root.openSettings()
@@ -150,6 +161,16 @@ Window {
 
     function openSettings() {
         var comp = Qt.createComponent("SettingsView.qml")
+        if (comp.status === Component.Ready) {
+            var win = comp.createObject(root, { sidebar: root })
+            win.show()
+            win.raise()
+            win.requestActivate()
+        }
+    }
+
+    function openPowerMenu() {
+        var comp = Qt.createComponent("PowerMenu.qml")
         if (comp.status === Component.Ready) {
             var win = comp.createObject(root, { sidebar: root })
             win.show()
